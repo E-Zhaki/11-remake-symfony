@@ -11,29 +11,40 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class ContactController extends AbstractController
 {
     #[Route('/', name: 'app_contact_index', methods: ['GET'])]
-    public function index(ContactRepository $contactRepository): Response
-    {
+        // Route principale de la page d'accueil
+        // URL : /
+        // Nom de la route : app_contact_index
+        // Méthode HTTP : GET (on lit des données, on n'en modifie pas)
+        public function index(ContactRepository $contactRepository): Response
+        {
+            // Symfony injecte automatiquement le ContactRepository
+            // Ce repository sert à lire les données de la table contact
 
-        $contacts= $contactRepository->findAll();
+            $contacts = $contactRepository->findAll();
+            // findAll() récupère TOUS les contacts depuis la base de données
+            // Doctrine transforme chaque ligne SQL en objet Contact
 
-        return $this->render('contact/index.html.twig', [
-            "contacts" => $contacts
-        ]);
+            return $this->render('contact/index.html.twig', [
+                "contacts" => $contacts
+                // On envoie la liste des contacts à la vue Twig
+            ]);
     }
 
 
-    #[Route('/contact/create', name: 'app_contact_create', methods:['GET', 'POST'])]
+ 
+   #[Route('/contact/create', name: 'app_contact_create', methods:['GET', 'POST'])]
         // Déclare une route accessible à l’URL /contact/create
         // Elle porte le nom "app_contact_create"
         // Elle accepte deux méthodes HTTP :
         // - GET → afficher le formulaire
         // - POST → envoyer le formulaire
 
-        public function create(Request $request, EntityManagerInterface $entityManager): Response {
+    public function create(Request $request, EntityManagerInterface $entityManager): Response {
         // Méthode appelée quand on visite /contact/create
         // $request contient les données envoyées par le navigateur (GET ou POST)
         // $entityManager sert à communiquer avec la base de données via Doctrine
@@ -97,8 +108,38 @@ final class ContactController extends AbstractController
             // Si le formulaire n’est pas envoyé ou contient des erreurs :
             // - on affiche la page create.html.twig
             // - on envoie la version "vue" du formulaire à Twig
-            // Twig s’occupe de l’affichage HTML
+            // Twig s’occupe de l’affichage HTML;
         }
 
 
-}
+    #[Route('/contact/edit/{id}', name: 'app_contact_edit', methods:['GET'])]
+        //  Déclare une route Symfony
+        //  URL : /contact/edit/ID
+        // {id} est un paramètre dynamique (ex: /contact/edit/3)
+        // name = nom interne de la route (utilisé dans Twig avec path())
+        // methods = ['GET'] car on affiche juste le formulaire pour l’instant
+
+        public function edit(int $id, ContactRepository $contactRepository): Response
+        //  Méthode appelée quand on va sur la route
+        //  $id : récupère automatiquement l'id depuis l'URL
+        // ContactRepository : injection automatique du repository (Doctrine)
+        //  Response : la fonction doit retourner une réponse HTTP
+        {
+
+            $contact = $contactRepository->find($id);
+            //  On va chercher en base de données le contact
+            //  WHERE id = $id
+            //  $contact est soit :
+            //    - un objet Contact (s'il existe)
+            //    - null (s'il n'existe pas)
+
+            if (null === $contact) {
+                throw new NotFoundHttpException("Ce contact n'existe pas");
+            }
+
+            return $this->render("/contact/edit.html.twig");
+
+        }
+
+
+        }
